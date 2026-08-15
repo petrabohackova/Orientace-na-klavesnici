@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trenažér české klávesnice 2.0</title>
+ 
+<style>
+body{
+font-family:Segoe UI,Arial,sans-serif;
+background:#eef4ff;
+padding:20px;
+text-align:center;
+}
+ 
+.box{
+background:white;
+max-width:900px;
+margin:auto;
+padding:25px;
+border-radius:20px;
+box-shadow:0 0 15px rgba(0,0,0,0.15);
+}
+ 
+h1{
+color:#1f4e79;
+}
+ 
+#target{
+font-size:42px;
+font-weight:bold;
+margin:30px 0;
+color:#0d4c8d;
+min-height:80px;
+}
+ 
+input,select,button{
+padding:10px;
+font-size:18px;
+margin:5px;
+}
+ 
+button{
+background:#1f4e79;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+ 
+button:hover{
+background:#143552;
+}
+ 
+#answer{
+width:80%;
+font-size:28px;
+text-align:center;
+}
+ 
+.stats{
+margin-top:10px;
+font-size:20px;
+}
+ 
+.result{
+margin-top:20px;
+font-size:22px;
+font-weight:bold;
+}
+</style>
+</head>
+ 
+<body>
+ 
+<div class="box">
+ 
+<h1>⌨️ Trenažér české klávesnice 2.0</h1>
+ 
+<div>
+<input id="playerName" placeholder="Jméno žáka">
+</div>
+ 
+<div>
+<select id="level">
+<option value="1">Velká písmena s diakritikou</option>
+<option value="2">Malá písmena s diakritikou</option>
+<option value="3">Krátká slova</option>
+<option value="4">Náročná slova</option>
+<option value="5">Věty</option>
+<option value="6">Vlastní a zeměpisná jména</option>
+<option value="7">Speciál Ň / ň</option>
+</select>
+ 
+<select id="gameTime">
+<option value="30">30 s</option>
+<option value="60" selected>60 s</option>
+<option value="120">120 s</option>
+</select>
+ 
+<button onclick="startGame()">Spustit</button>
+</div>
+ 
+<div class="stats">
+⏱️ Čas: <span id="time">0</span>
+</div>
+ 
+<div id="target">
+Vyber level a spusť hru
+</div>
+ 
+<input id="answer" disabled>
+ 
+<div class="stats">
+✅ <span id="correct">0</span>
+|
+❌ <span id="wrong">0</span>
+</div>
+ 
+<div id="result" class="result"></div>
+ 
+</div>
+ 
+<script>
+ 
+const data = {
+ 
+1:[
+'Á','Č','Ď','É','Ě','Í','Ň','Ó',
+'Ř','Š','Ť','Ú','Ů','Ý','Ž',
+'Á','Ó','Ň','Ř','Ž'
+],
+ 
+2:[
+'á','č','ď','é','ě','í','ň','ó',
+'ř','š','ť','ú','ů','ý','ž',
+'á','ó','ň','ř','ž'
+],
+ 
+3:[
+'kůň','žába','říjen','náměstí','úkol',
+'štěstí','želva','ředitel','čáp',
+'měsíc','stůl','nůž','příběh',
+'království','dítě','učitel',
+'žákyně','koště','anděl',
+'řemeslo','nádraží','zvíře',
+'průvod','zámek','židle'
+],
+ 
+4:[
+'Nejúspěšnější',
+'Předjíždění',
+'Železobetonový',
+'Čtyřúhelníkový',
+'Řeckořímský',
+'Mimořádný',
+'Nejvýhodnější',
+'Nejpřesvědčivější',
+'Zúčastněný',
+'Vyúčtování',
+'Mezinárodní',
+'Předvánoční'
+],
+ 
+5:[
+'Žlutý kůň běžel přes náměstí.',
+'Ředitel školy vyhlásil mimořádné volno.',
+'Ája navštívila Žofii v Ústí nad Labem.',
+'Nejúspěšnější žákyně převzala ocenění.',
+'Při předjíždění musí být řidič opatrný.',
+'Červený deštník zůstal na nádraží.',
+'Kůň se napil z průzračné řeky.',
+'Řemeslník opravil starou židli.'
+],
+ 
+6:[
+'Ázerbájdžán',
+'České Budějovice',
+'Žďár nad Sázavou',
+'Ústí nad Labem',
+'Řehoř',
+'Žofie',
+'Šárka',
+'Čeněk',
+'Český Krumlov',
+'Švýcarsko',
+'Říčany'
+],
+ 
+7:[
+'Ň','ň',
+'Ňadro','ňadro',
+'Kůň',
+'Loňský',
+'Splněný',
+'Odůvodnění',
+'Naplnění',
+'Přeměněný',
+'Zaměstnání'
+]
+ 
+};
+ 
+let current="";
+let last="";
+let correct=0;
+let wrong=0;
+let chars=0;
+let timer;
+let timeLeft=0;
+ 
+function randomItem(arr){
+ 
+let item;
+ 
+do{
+item=arr[Math.floor(Math.random()*arr.length)];
+}
+while(item===last && arr.length>1);
+ 
+last=item;
+ 
+return item;
+}
+ 
+function nextItem(){
+ 
+const level=
+document.getElementById("level").value;
+ 
+current=randomItem(data[level]);
+ 
+document.getElementById("target").textContent=current;
+ 
+document.getElementById("answer").value="";
+ 
+document.getElementById("answer").focus();
+}
+ 
+function startGame(){
+ 
+const name=
+document.getElementById("playerName").value.trim();
+ 
+if(name===""){
+alert("Zadejte jméno.");
+return;
+}
+ 
+correct=0;
+wrong=0;
+chars=0;
+ 
+document.getElementById("correct").textContent=0;
+document.getElementById("wrong").textContent=0;
+document.getElementById("result").innerHTML="";
+ 
+timeLeft=
+Number(document.getElementById("gameTime").value);
+ 
+document.getElementById("time").textContent=timeLeft;
+ 
+document.getElementById("answer").disabled=false;
+ 
+nextItem();
+ 
+clearInterval(timer);
+ 
+timer=setInterval(function(){
+ 
+timeLeft--;
+ 
+document.getElementById("time").textContent=timeLeft;
+ 
+if(timeLeft<=0){
+ 
+clearInterval(timer);
+ 
+document.getElementById("answer").disabled=true;
+ 
+const total=correct+wrong;
+ 
+const success=
+total===0
+? 0
+: Math.round(correct/total*100);
+ 
+const cpm=
+Math.round(
+chars /
+(Number(document.getElementById("gameTime").value)/60)
+);
+ 
+document.getElementById("result").innerHTML=
+"🏆 "+name+
+"<br>Správně: "+correct+
+"<br>Chyby: "+wrong+
+"<br>Úspěšnost: "+success+" %"+
+"<br>Znaků za minutu: "+cpm;
+}
+ 
+},1000);
+ 
+}
+ 
+document.getElementById("answer")
+.addEventListener("keydown",function(e){
+ 
+if(e.key!=="Enter") return;
+ 
+if(this.disabled) return;
+ 
+if(this.value.trim()===current){
+ 
+correct++;
+chars+=current.length;
+ 
+document.getElementById("correct").textContent=correct;
+ 
+}else{
+ 
+wrong++;
+ 
+document.getElementById("wrong").textContent=wrong;
+}
+ 
+nextItem();
+ 
+});
+ 
+</script>
+ 
+</body>
+</html>
